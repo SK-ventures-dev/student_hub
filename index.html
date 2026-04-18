@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tannu — Smart Hostel Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark">H</div>
+      <div>
+        <h1 class="login-title">Tannu</h1>
+        <p class="login-sub">Smart Hostel Management</p>
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-600">Username</label>
+      <input type="text" id="loginUser" class="form-control hos-input" placeholder="admin" value="admin"/>
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-600">Password</label>
+      <input type="password" id="loginPass" class="form-control hos-input" placeholder="••••••••" value="admin123"/>
+    </div>
+    <button class="btn hos-btn-primary w-100" onclick="Auth.login()">Sign In</button>
+    <p class="text-center mt-3 text-muted small">Default: admin / admin123</p>
+  </div>
+</div>
+
+<div id="mainApp" class="d-none">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark-sm">H</div>
+      <span class="sidebar-brand">Tannu</span>
+      <button class="btn btn-link sidebar-close d-lg-none" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><i class="bi bi-grid-fill"></i><span>Dashboard</span></a>
+      <a href="#" class="nav-item" data-page="rooms" onclick="navigate('rooms')"><i class="bi bi-door-closed-fill"></i><span>Rooms</span></a>
+      <a href="#" class="nav-item" data-page="students" onclick="navigate('students')"><i class="bi bi-people-fill"></i><span>Students</span></a>
+      <a href="#" class="nav-item" data-page="electricity" onclick="navigate('electricity')"><i class="bi bi-lightning-charge-fill"></i><span>Electricity</span></a>
+      <a href="#" class="nav-item" data-page="payments" onclick="navigate('payments')"><i class="bi bi-wallet2"></i><span>Billing</span></a>
+      <a href="#" class="nav-item" data-page="roomBilling" onclick="navigate('roomBilling')"><i class="bi bi-table"></i><span>Room Bills</span></a>
+      <a href="#" class="nav-item" data-page="complaints" onclick="navigate('complaints')"><i class="bi bi-tools"></i><span>Service</span></a>
+      <a href="#" class="nav-item" data-page="reports" onclick="navigate('reports')"><i class="bi bi-bar-chart-fill"></i><span>Reports</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode"><i class="bi bi-moon-fill" id="themeIcon"></i></button>
+      <button class="btn btn-link text-muted" onclick="Backup.exportData()" title="Backup"><i class="bi bi-cloud-download"></i></button>
+      <button class="btn btn-link text-muted" onclick="Auth.logout()" title="Logout"><i class="bi bi-box-arrow-right"></i></button>
+    </div>
+  </aside>
+
+  <main class="main-content" id="mainContent">
+    <header class="top-bar">
+      <button class="btn btn-link menu-toggle d-lg-none" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+      <div class="page-title-area">
+        <h2 class="page-heading" id="pageHeading">Dashboard</h2>
+        <span class="page-date" id="pageDate"></span>
+      </div>
+      <div class="top-actions">
+        <button class="btn hos-btn-ghost btn-sm" onclick="document.getElementById('importFile').click()" title="Restore Data"><i class="bi bi-cloud-upload"></i></button>
+        <input type="file" id="importFile" accept=".json" class="d-none" onchange="Backup.importData(event)"/>
+        <div class="admin-badge"><i class="bi bi-person-circle"></i> Admin</div>
+      </div>
+    </header>
+
+    <div class="page-container">
+
+      <!-- DASHBOARD -->
+      <div id="page-dashboard" class="page-view active">
+        <div class="row g-3 mb-4" id="dashboardCards"></div>
+        <div class="row g-3">
+          <div class="col-lg-7">
+            <div class="hos-card">
+              <div class="hos-card-header"><h5><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Recent Activity</h5></div>
+              <div id="recentActivity" class="activity-list"></div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="hos-card">
+              <div class="hos-card-header"><h5><i class="bi bi-pie-chart-fill text-info me-2"></i>Room Occupancy</h5></div>
+              <div id="occupancyChart" class="occupancy-visual"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROOMS -->
+      <div id="page-rooms" class="page-view">
+        <div class="action-bar">
+          <div class="search-wrap"><i class="bi bi-search"></i><input type="text" class="hos-search" placeholder="Search room…" id="roomSearch" oninput="Rooms.filter()"/></div>
+          <div class="filter-pills">
+            <button class="pill active" onclick="Rooms.setFilter('all', this)">All</button>
+            <button class="pill" onclick="Rooms.setFilter('vacant', this)">Vacant</button>
+            <button class="pill" onclick="Rooms.setFilter('occupied', this)">Occupied</button>
+          </div>
+          <button class="btn hos-btn-primary btn-sm" onclick="Rooms.openModal()"><i class="bi bi-plus-lg me-1"></i>Add Room</button>
+        </div>
+        <div id="roomsList" class="rooms-grid"></div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div id="page-students" class="page-view">
+        <div class="action-bar">
+          <div class="search-wrap"><i class="bi bi-search"></i><input type="text" class="hos-search" placeholder="Search student…" id="studentSearch" oninput="Students.filter()"/></div>
+          <button class="btn hos-btn-primary btn-sm" onclick="Students.openModal()"><i class="bi bi-plus-lg me-1"></i>Add Student</button>
+        </div>
+        <div id="studentsList"></div>
+      </div>
+
+      <!-- ELECTRICITY -->
+      <div id="page-electricity" class="page-view">
+        <div class="action-bar">
+          <div class="search-wrap"><i class="bi bi-search"></i><input type="text" class="hos-search" placeholder="Search room…" id="elecSearch" oninput="Electricity.filter()"/></div>
+          <button class="btn hos-btn-primary btn-sm" onclick="Electricity.openModal()"><i class="bi bi-plus-lg me-1"></i>Record Reading</button>
+        </div>
+        <div id="electricityList"></div>
+      </div>
+
+      <!-- BILLING -->
+      <div id="page-payments" class="page-view">
+        <div class="action-bar">
+          <div class="search-wrap"><i class="bi bi-search"></i><input type="text" class="hos-search" placeholder="Search billing…" id="paySearch" oninput="Payments.filter()"/></div>
+          <div class="filter-pills">
+            <button class="pill active" onclick="Payments.setFilter('all', this)">All</button>
+            <button class="pill" onclick="Payments.setFilter('paid', this)">Paid</button>
+            <button class="pill" onclick="Payments.setFilter('partial', this)">Partial</button>
+            <button class="pill" onclick="Payments.setFilter('pending', this)">Pending</button>
+          </div>
+          <button class="btn hos-btn-primary btn-sm" onclick="Payments.openModal()"><i class="bi bi-plus-lg me-1"></i>New Bill</button>
+        </div>
+        <div id="paymentsList"></div>
+      </div>
+
+      <!-- ROOM-WISE BILLING -->
+      <div id="page-roomBilling" class="page-view">
+        <div class="action-bar">
+          <div class="search-wrap"><i class="bi bi-search"></i><input type="text" class="hos-search" placeholder="Search room or student…" id="rbSearch" oninput="RoomBilling.filter()"/></div>
+          <input type="month" class="hos-input" id="rbMonth" style="padding:9px 12px;border-radius:8px;font-size:14px;" oninput="RoomBilling.render()"/>
+          <button class="btn hos-btn-success btn-sm" onclick="RoomBilling.exportCSV()"><i class="bi bi-download me-1"></i>Export CSV</button>
+        </div>
+        <div id="roomBillingList"></div>
+      </div>
+
+      <!-- COMPLAINTS -->
+      <div id="page-complaints" class="page-view">
+        <div class="action-bar">
+          <div class="filter-pills">
+            <button class="pill active" onclick="Complaints.setFilter('all', this)">All</button>
+            <button class="pill" onclick="Complaints.setFilter('pending', this)">Pending</button>
+            <button class="pill" onclick="Complaints.setFilter('resolved', this)">Resolved</button>
+          </div>
+          <button class="btn hos-btn-primary btn-sm" onclick="Complaints.openModal()"><i class="bi bi-plus-lg me-1"></i>New Request</button>
+        </div>
+        <div id="complaintsList"></div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="page-reports" class="page-view">
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="hos-card text-center p-4">
+              <i class="bi bi-calendar-month display-4 text-primary mb-3"></i>
+              <h6>Monthly Income Report</h6>
+              <select class="form-select hos-input mb-3" id="reportMonth"></select>
+              <button class="btn hos-btn-primary w-100" onclick="Reports.generateMonthly()">Generate</button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="hos-card text-center p-4">
+              <i class="bi bi-exclamation-triangle-fill display-4 text-warning mb-3"></i>
+              <h6>Pending &amp; Partial Dues</h6>
+              <p class="text-muted small">All unpaid and partial bills</p>
+              <button class="btn hos-btn-warning w-100" onclick="Reports.generateDues()">Generate</button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="hos-card text-center p-4">
+              <i class="bi bi-file-earmark-spreadsheet display-4 text-success mb-3"></i>
+              <h6>Export Full Data</h6>
+              <p class="text-muted small">Export all payments as CSV</p>
+              <button class="btn hos-btn-success w-100" onclick="Reports.exportCSV()">Export CSV</button>
+            </div>
+          </div>
+        </div>
+        <div id="reportOutput"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <nav class="bottom-nav d-lg-none">
+    <a href="#" class="bottom-nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><i class="bi bi-grid-fill"></i><span>Home</span></a>
+    <a href="#" class="bottom-nav-item" data-page="rooms" onclick="navigate('rooms')"><i class="bi bi-door-closed-fill"></i><span>Rooms</span></a>
+    <a href="#" class="bottom-nav-item" data-page="students" onclick="navigate('students')"><i class="bi bi-people-fill"></i><span>Students</span></a>
+    <a href="#" class="bottom-nav-item" data-page="payments" onclick="navigate('payments')"><i class="bi bi-wallet2"></i><span>Billing</span></a>
+    <a href="#" class="bottom-nav-item" data-page="roomBilling" onclick="navigate('roomBilling')"><i class="bi bi-table"></i><span>Room Bills</span></a>
+  </nav>
+</div>
+
+<div class="sidebar-overlay d-lg-none" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- ROOM MODAL -->
+<div class="modal fade" id="roomModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content hos-modal">
+      <div class="modal-header"><h5 class="modal-title" id="roomModalTitle">Add Room</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="roomId"/>
+        <div class="mb-3"><label class="form-label">Room Number</label><input type="text" id="roomNo" class="form-control hos-input" placeholder="e.g. 101"/></div>
+        <div class="mb-3"><label class="form-label">Room Type</label><select id="roomType" class="form-select hos-input"><option value="Single">Single</option><option value="Double">Double</option><option value="Triple">Triple</option></select></div>
+        <div class="mb-3"><label class="form-label">Monthly Rent (₹)</label><input type="number" id="roomRent" class="form-control hos-input" placeholder="e.g. 5000"/></div>
+      </div>
+      <div class="modal-footer"><button class="btn hos-btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn hos-btn-primary" onclick="Rooms.save()">Save Room</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT MODAL — ENHANCED -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content hos-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="studentModalTitle">Add Student</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="studentId"/>
+        <div class="row g-3 mb-2">
+          <!-- Photo Upload -->
+          <div class="col-md-2 d-flex flex-column align-items-center justify-content-start">
+            <div class="student-photo-upload" id="photoUploadBox" onclick="document.getElementById('studentPhoto').click()">
+              <img id="photoPreview" src="" class="d-none" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"/>
+              <div id="photoPlaceholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+                <i class="bi bi-camera-fill" style="font-size:22px;color:var(--text-muted)"></i>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;text-align:center;line-height:1.3">Click to<br>Upload Photo</div>
+              </div>
+            </div>
+            <input type="file" id="studentPhoto" class="d-none" accept="image/*" onchange="Students.previewPhoto(event)"/>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:6px;text-align:center">Passport Size</div>
+          </div>
+          <!-- Basic Info -->
+          <div class="col-md-10">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Full Name <span class="req">*</span></label>
+                <input type="text" id="studentName" class="form-control hos-input" placeholder="Full Name"/>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Phone Number <span class="req">*</span></label>
+                <input type="tel" id="studentPhone" class="form-control hos-input" placeholder="+91 XXXXXXXXXX"/>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Emergency Contact</label>
+                <input type="tel" id="studentEmergency" class="form-control hos-input" placeholder="Guardian Number"/>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Address</label>
+                <textarea id="studentAddress" class="form-control hos-input" rows="2" placeholder="Full Address"></textarea>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Notes / Remarks</label>
+                <textarea id="studentNotes" class="form-control hos-input" rows="2" placeholder="Any special notes…"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-divider"><span>Identity &amp; Documents</span></div>
+
+        <div class="row g-3 mb-2">
+          <div class="col-md-4">
+            <label class="form-label">Aadhaar Number <span class="req">*</span></label>
+            <div class="aadhaar-input-wrap">
+              <input type="text" id="studentAadhaar" class="form-control hos-input" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="Students.formatAadhaar(this)"/>
+              <span class="aadhaar-icon" id="aadhaarIcon"><i class="bi bi-shield-check"></i></span>
+            </div>
+            <div id="aadhaarStatus" class="aadhaar-status"></div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">ID Proof Type</label>
+            <select id="studentIdType" class="form-select hos-input">
+              <option value="Aadhaar">Aadhaar Card</option>
+              <option value="PAN">PAN Card</option>
+              <option value="Passport">Passport</option>
+              <option value="DL">Driving Licence</option>
+              <option value="VoterId">Voter ID</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Upload ID Proof</label>
+            <input type="file" id="studentIdProof" class="form-control hos-input" accept="image/*,application/pdf" onchange="Students.previewId(event)"/>
+            <div id="idPreviewWrap" class="mt-2 d-none">
+              <img id="idPreview" src="" class="rounded" style="max-height:70px;max-width:160px;object-fit:cover;border:1px solid var(--border);"/>
+              <span id="idFileName" style="font-size:11px;color:var(--text-muted);display:block;margin-top:3px;"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-divider"><span>Room &amp; Stay Details</span></div>
+
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Assign Room <span class="req">*</span></label>
+            <select id="studentRoom" class="form-select hos-input"></select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Check-in Date <span class="req">*</span></label>
+            <input type="date" id="studentCheckin" class="form-control hos-input"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Expected Check-out</label>
+            <input type="date" id="studentCheckout" class="form-control hos-input"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Security Deposit (₹)</label>
+            <input type="number" id="studentDeposit" class="form-control hos-input" placeholder="0"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn hos-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn hos-btn-primary" onclick="Students.save()"><i class="bi bi-check-lg me-1"></i>Save Student</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL — ENHANCED WITH PARTIAL -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content hos-modal">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Create Bill</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <label class="form-label">Select Student</label>
+            <select id="billStudent" class="form-select hos-input" onchange="Payments.loadStudentInfo()"></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Billing Month</label>
+            <input type="month" id="billMonth" class="form-control hos-input" onchange="Payments.autoFetchReading()"/>
+          </div>
+        </div>
+
+        <div id="autoFetchBanner" class="auto-fetch-banner d-none">
+          <i class="bi bi-magic me-2"></i><span id="autoFetchText"></span>
+        </div>
+
+        <div class="modal-divider"><span><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Electricity Meter</span></div>
+        <div class="elec-card p-3 mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-4">
+              <label class="form-label small">Previous Reading</label>
+              <input type="number" id="prevMeter" class="form-control hos-input hos-input-sm" placeholder="0" oninput="Payments.calcBill()"/>
+              <div id="prevReadingHint" style="font-size:11px;color:var(--text-muted);margin-top:3px;"></div>
+            </div>
+            <div class="col-4">
+              <label class="form-label small">Current Reading</label>
+              <input type="number" id="currMeter" class="form-control hos-input hos-input-sm" placeholder="0" oninput="Payments.calcBill()"/>
+            </div>
+            <div class="col-4">
+              <div class="units-box">
+                <div class="units-val" id="unitsDisplay">0</div>
+                <div class="units-lbl">Units Used</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bill-summary mb-3">
+          <div class="bill-row"><span>Room Rent</span><span id="bs-rent">₹0</span></div>
+          <div class="bill-row"><span>Electricity (<span id="bs-units-inline">0</span> units × ₹10)</span><span id="bs-elec">₹0</span></div>
+          <div class="bill-row total"><span>Total Bill</span><span id="bs-total">₹0</span></div>
+        </div>
+
+        <div class="modal-divider"><span><i class="bi bi-cash-coin text-success me-1"></i>Payment Details</span></div>
+        <div class="payment-detail-card p-3">
+          <div class="row g-3 mb-2">
+            <div class="col-md-4">
+              <label class="form-label small">Payment Type</label>
+              <select id="paymentType" class="form-select hos-input hos-input-sm" onchange="Payments.handlePaymentType()">
+                <option value="full">Full Payment</option>
+                <option value="partial">Partial Amount</option>
+                <option value="rent_only">Rent Only</option>
+                <option value="electricity_only">Electricity Only</option>
+                <option value="pending">Mark Pending</option>
+              </select>
+            </div>
+            <div class="col-md-4" id="partialAmountWrap" style="display:none;">
+              <label class="form-label small">Amount Paid (₹)</label>
+              <input type="number" id="partialAmount" class="form-control hos-input hos-input-sm" placeholder="0" oninput="Payments.calcPartial()"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Payment Date</label>
+              <input type="date" id="paymentDate" class="form-control hos-input hos-input-sm"/>
+            </div>
+          </div>
+          <div class="balance-summary" id="balanceSummary">
+            <div class="balance-row"><span>Amount Paid</span><span class="text-success fw-700" id="bsPaid">₹0</span></div>
+            <div class="balance-row"><span>Balance Due</span><span class="text-danger fw-700" id="bsBalance">₹0</span></div>
+            <div class="balance-row"><span>Status</span><span id="bsStatus" class="status-badge pending">Pending</span></div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <label class="form-label">Payment Notes</label>
+          <input type="text" id="billNotes" class="form-control hos-input" placeholder="e.g. Paid via UPI, partial cash…"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn hos-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn hos-btn-primary" onclick="Payments.save()"><i class="bi bi-check-lg me-1"></i>Save Bill</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARTIAL PAYMENT MODAL -->
+<div class="modal fade" id="partialPayModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content hos-modal">
+      <div class="modal-header"><h5 class="modal-title"><i class="bi bi-cash-coin me-2 text-success"></i>Record Payment</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="ppBillId"/>
+        <div id="ppBillInfo" class="pp-bill-info mb-3"></div>
+        <div class="mb-3">
+          <label class="form-label">Amount Paying Now (₹)</label>
+          <input type="number" id="ppAmount" class="form-control hos-input" placeholder="Enter amount" oninput="Payments.updatePartialPreview()"/>
+        </div>
+        <div id="ppPreview" class="balance-summary d-none mb-3">
+          <div class="balance-row"><span>Paying Now</span><span class="text-success fw-700" id="ppPayingNow">₹0</span></div>
+          <div class="balance-row"><span>Remaining After</span><span class="text-danger fw-700" id="ppRemaining">₹0</span></div>
+          <div class="balance-row"><span>New Status</span><span id="ppNewStatus" class="status-badge pending">pending</span></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Payment Date</label>
+          <input type="date" id="ppDate" class="form-control hos-input"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Note</label>
+          <input type="text" id="ppNote" class="form-control hos-input" placeholder="e.g. UPI, Cash…"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn hos-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn hos-btn-primary" onclick="Payments.recordPartial()">Record Payment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div class="modal fade" id="receiptModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content hos-modal">
+      <div class="modal-header"><h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Payment Receipt</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="receiptContent"></div>
+      <div class="modal-footer"><button class="btn hos-btn-ghost" data-bs-dismiss="modal">Close</button><button class="btn hos-btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ELECTRICITY MODAL -->
+<div class="modal fade" id="electricityModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content hos-modal">
+      <div class="modal-header"><h5 class="modal-title"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Record Meter Reading</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Select Room</label><select id="elecRoom" class="form-select hos-input" onchange="Electricity.loadLastReading()"></select></div>
+        <div class="mb-3"><label class="form-label">Reading Month</label><input type="month" id="elecMonth" class="form-control hos-input"/></div>
+        <div id="elecPrevInfo" class="elec-prev-card d-none mb-3"></div>
+        <div class="mb-3"><label class="form-label">Current Meter Reading (units)</label><input type="number" id="elecReading" class="form-control hos-input" placeholder="e.g. 1450" oninput="Electricity.calcUnits()"/></div>
+        <div id="elecCalcResult" class="elec-calc-result d-none"></div>
+        <div class="mb-2"><label class="form-label">Notes (optional)</label><input type="text" id="elecNotes" class="form-control hos-input" placeholder="Any remarks…"/></div>
+      </div>
+      <div class="modal-footer"><button class="btn hos-btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn hos-btn-primary" onclick="Electricity.save()">Save Reading</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLAINT MODAL -->
+<div class="modal fade" id="complaintModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content hos-modal">
+      <div class="modal-header"><h5 class="modal-title">New Service Request</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Student / Room</label><select id="complaintStudent" class="form-select hos-input"></select></div>
+        <div class="mb-3"><label class="form-label">Category</label><select id="complaintCategory" class="form-select hos-input"><option>Plumbing</option><option>Electrical</option><option>Cleaning</option><option>Furniture</option><option>Internet</option><option>Other</option></select></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea id="complaintDesc" class="form-control hos-input" rows="3" placeholder="Describe the issue…"></textarea></div>
+      </div>
+      <div class="modal-footer"><button class="btn hos-btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn hos-btn-primary" onclick="Complaints.save()">Submit</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+<div class="modal fade" id="reminderModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content hos-modal reminder-modal">
+      <div class="modal-body text-center p-4">
+        <div class="reminder-bell"><i class="bi bi-bell-fill"></i></div>
+        <h5 class="mt-3 fw-700">Rent Reminder!</h5>
+        <p class="text-muted" id="reminderText"></p>
+        <button class="btn hos-btn-primary w-100" data-bs-dismiss="modal">Got It</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/students.js"></script>
+<script src="js/electricity.js"></script>
+<script src="js/payments.js"></script>
+<script src="js/roomBilling.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
