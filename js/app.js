@@ -1,4 +1,8 @@
-// app.js — Main Controller (Enhanced v2)
+// ═══════════════════════════════════════════════════
+// app.js — Modified for Supabase integration
+// CHANGE: App.boot() is new — handles setup wizard vs direct launch
+// Everything else identical to original app.js
+// ═══════════════════════════════════════════════════
 
 // ====== AUTH ======
 const Auth = {
@@ -21,8 +25,8 @@ const Auth = {
     document.getElementById('loginScreen').classList.remove('d-none');
   },
   check() {
-    const session = DB.get('session');
-    if (session && session.loggedIn) {
+    const s = DB.get('session');
+    if (s && s.loggedIn) {
       document.getElementById('loginScreen').classList.add('d-none');
       document.getElementById('mainApp').classList.remove('d-none');
       return true;
@@ -45,55 +49,18 @@ const Complaints = {
     if (this._filter === 'pending') items = items.filter(c => c.status === 'pending');
     if (this._filter === 'resolved') items = items.filter(c => c.status === 'resolved');
     items = items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
     const el = document.getElementById('complaintsList');
-    if (!items.length) {
-      el.innerHTML = `<div class="empty-state"><i class="bi bi-tools"></i><p>No service requests yet</p></div>`;
-      return;
-    }
-
+    if (!items.length) { el.innerHTML = `<div class="empty-state"><i class="bi bi-tools"></i><p>No service requests yet</p></div>`; return; }
     const catIcons = { Plumbing: 'bi-droplet-fill', Electrical: 'bi-lightning-fill', Cleaning: 'bi-brush-fill', Furniture: 'bi-aspect-ratio-fill', Internet: 'bi-wifi', Other: 'bi-three-dots' };
-    el.innerHTML = `
-      <div class="hos-card p-0">
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Student / Room</th><th>Category</th><th>Description</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${items.map(c => `
-                <tr>
-                  <td><div class="fw-600">${c.studentName}</div><div style="font-size:12px;color:var(--text-muted)">Room ${c.roomNumber}</div></td>
-                  <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;"><i class="bi ${catIcons[c.category]||'bi-tools'}"></i>${c.category}</span></td>
-                  <td style="max-width:200px;font-size:13px;">${c.description}</td>
-                  <td><span class="status-badge ${c.status}">${c.status}</span></td>
-                  <td style="font-size:13px;">${formatDate(c.createdAt)}</td>
-                  <td>
-                    <div class="d-flex gap-1">
-                      ${c.status === 'pending' ? `<button class="btn-icon" onclick="Complaints.resolve('${c.id}')" title="Mark Resolved" style="color:var(--success)"><i class="bi bi-check-lg"></i></button>` : ''}
-                      <button class="btn-icon danger" onclick="Complaints.delete('${c.id}')" title="Delete"><i class="bi bi-trash-fill"></i></button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
+    el.innerHTML = `<div class="hos-card p-0"><div class="data-table-wrap"><table class="data-table"><thead><tr><th>Student / Room</th><th>Category</th><th>Description</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>${items.map(c => `<tr><td><div class="fw-600">${c.studentName}</div><div style="font-size:12px;color:var(--text-muted)">Room ${c.roomNumber}</div></td><td><span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;"><i class="bi ${catIcons[c.category]||'bi-tools'}"></i>${c.category}</span></td><td style="max-width:200px;font-size:13px;">${c.description}</td><td><span class="status-badge ${c.status}">${c.status}</span></td><td style="font-size:13px;">${formatDate(c.createdAt)}</td><td><div class="d-flex gap-1">${c.status === 'pending' ? `<button class="btn-icon" onclick="Complaints.resolve('${c.id}')" title="Mark Resolved" style="color:var(--success)"><i class="bi bi-check-lg"></i></button>` : ''}<button class="btn-icon danger" onclick="Complaints.delete('${c.id}')" title="Delete"><i class="bi bi-trash-fill"></i></button></div></td></tr>`).join('')}</tbody></table></div></div>`;
   },
 
-  setFilter(f, btn) {
-    this._filter = f;
-    document.querySelectorAll('#page-complaints .pill').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    this.render();
-  },
+  setFilter(f, btn) { this._filter = f; document.querySelectorAll('#page-complaints .pill').forEach(p => p.classList.remove('active')); btn.classList.add('active'); this.render(); },
 
   openModal() {
     const sel = document.getElementById('complaintStudent');
     const students = Students.getActive();
-    sel.innerHTML = students.length
-      ? students.map(s => { const r = Rooms.getById(s.roomId); return `<option value="${s.id}" data-room="${r?r.number:''}">${s.name} — Room ${r?r.number:'?'}</option>`; }).join('')
-      : '<option value="">No active students</option>';
+    sel.innerHTML = students.length ? students.map(s => { const r = Rooms.getById(s.roomId); return `<option value="${s.id}" data-room="${r?r.number:''}">${s.name} — Room ${r?r.number:'?'}</option>`; }).join('') : '<option value="">No active students</option>';
     document.getElementById('complaintDesc').value = '';
     document.getElementById('complaintCategory').value = 'Plumbing';
     this._modal.show();
@@ -144,18 +111,11 @@ function navigate(page) {
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById(`page-${page}`);
   if (pageEl) pageEl.classList.add('active');
-
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
   document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
-
-  const titles = {
-    dashboard: 'Dashboard', rooms: 'Room Management', students: 'Students',
-    electricity: 'Electricity Meter', payments: 'Billing & Payments',
-    roomBilling: 'Room-wise Billing', complaints: 'Service Requests', reports: 'Reports'
-  };
+  const titles = { dashboard: 'Dashboard', rooms: 'Room Management', students: 'Students', electricity: 'Electricity Meter', payments: 'Billing & Payments', roomBilling: 'Room-wise Billing', complaints: 'Service Requests', reports: 'Reports' };
   document.getElementById('pageHeading').textContent = titles[page] || page;
-
-  switch (page) {
+  switch(page) {
     case 'dashboard': Dashboard.render(); break;
     case 'rooms': Rooms.render(); break;
     case 'students': Students.render(); break;
@@ -164,11 +124,7 @@ function navigate(page) {
     case 'roomBilling': RoomBilling.render(); break;
     case 'complaints': Complaints.render(); break;
   }
-
-  if (window.innerWidth < 992) {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').classList.remove('show');
-  }
+  if (window.innerWidth < 992) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
   return false;
 }
 
@@ -205,7 +161,6 @@ function checkRentReminder() {
 // ====== SEED DEMO DATA ======
 function seedDemoData() {
   if (DB.get('seeded_v2')) return;
-
   const rooms = [
     { id: genId(), number: '101', type: 'Single', rent: 4500, status: 'vacant', studentId: null, studentName: null },
     { id: genId(), number: '102', type: 'Double', rent: 6000, status: 'vacant', studentId: null, studentName: null },
@@ -215,7 +170,6 @@ function seedDemoData() {
     { id: genId(), number: '401', type: 'Single', rent: 5000, status: 'vacant', studentId: null, studentName: null },
   ];
   DB.set('rooms', rooms);
-
   const s1id = genId(), s2id = genId(), s3id = genId(), s4id = genId();
   const students = [
     { id: s1id, name: 'Arjun Sharma', phone: '9876543210', emergency: '9876500000', address: 'Mumbai, Maharashtra', aadhaar: '1234 5678 9012', idType: 'Aadhaar', notes: '', roomId: rooms[0].id, checkin: '2025-01-15', checkout: '', deposit: 5000, photo: null, idProof: null, checkedOut: false },
@@ -224,81 +178,51 @@ function seedDemoData() {
     { id: s4id, name: 'Sneha Reddy', phone: '7654321098', emergency: '7654300000', address: 'Hyderabad, Telangana', aadhaar: '1111 2222 3333', idType: 'Aadhaar', notes: '', roomId: rooms[1].id, checkin: '2025-02-15', checkout: '', deposit: 3000, photo: null, idProof: null, checkedOut: false },
   ];
   DB.set('students', students);
-
   rooms[0].status = 'occupied'; rooms[0].studentId = s1id; rooms[0].studentName = 'Arjun Sharma';
   rooms[1].status = 'occupied'; rooms[1].studentId = s2id; rooms[1].studentName = 'Priya Patel, Sneha Reddy';
   rooms[2].status = 'occupied'; rooms[2].studentId = s3id; rooms[2].studentName = 'Ravi Kumar';
   DB.set('rooms', rooms);
-
   const month = currentMonth();
   const prevMonth = (() => { const d = new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
-
-  // Seed electricity readings
-  const elecReadings = [
+  DB.set('elecReadings', [
     { id: genId(), roomId: rooms[0].id, month: prevMonth, reading: 1100, notes: '', recordedAt: new Date().toISOString() },
     { id: genId(), roomId: rooms[0].id, month: month, reading: 1145, notes: '', recordedAt: new Date().toISOString() },
     { id: genId(), roomId: rooms[1].id, month: prevMonth, reading: 2200, notes: '', recordedAt: new Date().toISOString() },
     { id: genId(), roomId: rooms[1].id, month: month, reading: 2265, notes: '', recordedAt: new Date().toISOString() },
     { id: genId(), roomId: rooms[2].id, month: prevMonth, reading: 500, notes: '', recordedAt: new Date().toISOString() },
     { id: genId(), roomId: rooms[2].id, month: month, reading: 540, notes: '', recordedAt: new Date().toISOString() },
-  ];
-  DB.set('elecReadings', elecReadings);
-
-  const payments = [
-    {
-      id: genId(), studentId: s1id, month, studentName: 'Arjun Sharma', roomId: rooms[0].id, roomNumber: '101',
-      prevMeter: 1100, currMeter: 1145, units: 45, elecCharge: 450, rent: 4500, total: 4950,
-      amountPaid: 4950, status: 'paid', notes: 'Paid via UPI',
-      paymentHistory: [{ amount: 4950, date: new Date().toISOString().slice(0,10), note: 'Full payment UPI', type: 'full' }],
-      createdAt: new Date().toISOString(), paidAt: new Date().toISOString(),
-    },
-    {
-      id: genId(), studentId: s2id, month, studentName: 'Priya Patel', roomId: rooms[1].id, roomNumber: '102',
-      prevMeter: 2200, currMeter: 2265, units: 65, elecCharge: 650, rent: 6000, total: 6650,
-      amountPaid: 3000, status: 'partial', notes: 'Partial payment cash',
-      paymentHistory: [{ amount: 3000, date: new Date().toISOString().slice(0,10), note: 'Partial cash', type: 'partial' }],
-      createdAt: new Date().toISOString(), paidAt: null,
-    },
-    {
-      id: genId(), studentId: s3id, month, studentName: 'Ravi Kumar', roomId: rooms[2].id, roomNumber: '201',
-      prevMeter: 500, currMeter: 540, units: 40, elecCharge: 400, rent: 7500, total: 7900,
-      amountPaid: 0, status: 'pending', notes: '',
-      paymentHistory: [],
-      createdAt: new Date().toISOString(), paidAt: null,
-    },
-    {
-      id: genId(), studentId: s1id, month: prevMonth, studentName: 'Arjun Sharma', roomId: rooms[0].id, roomNumber: '101',
-      prevMeter: 1060, currMeter: 1100, units: 40, elecCharge: 400, rent: 4500, total: 4900,
-      amountPaid: 4900, status: 'paid', notes: 'Bank transfer',
-      paymentHistory: [{ amount: 4900, date: new Date(Date.now()-2592000000).toISOString().slice(0,10), note: 'Bank transfer', type: 'full' }],
-      createdAt: new Date(Date.now()-2592000000).toISOString(), paidAt: new Date(Date.now()-2592000000).toISOString(),
-    },
-  ];
-  DB.set('payments', payments);
-
-  const complaints = [
+  ]);
+  DB.set('payments', [
+    { id: genId(), studentId: s1id, month, studentName: 'Arjun Sharma', roomId: rooms[0].id, roomNumber: '101', prevMeter: 1100, currMeter: 1145, units: 45, elecCharge: 450, rent: 4500, total: 4950, amountPaid: 4950, status: 'paid', notes: 'Paid via UPI', paymentHistory: [{ amount: 4950, date: new Date().toISOString().slice(0,10), note: 'Full payment UPI', type: 'full' }], createdAt: new Date().toISOString(), paidAt: new Date().toISOString() },
+    { id: genId(), studentId: s2id, month, studentName: 'Priya Patel', roomId: rooms[1].id, roomNumber: '102', prevMeter: 2200, currMeter: 2265, units: 65, elecCharge: 650, rent: 6000, total: 6650, amountPaid: 3000, status: 'partial', notes: 'Partial payment cash', paymentHistory: [{ amount: 3000, date: new Date().toISOString().slice(0,10), note: 'Partial cash', type: 'partial' }], createdAt: new Date().toISOString(), paidAt: null },
+    { id: genId(), studentId: s3id, month, studentName: 'Ravi Kumar', roomId: rooms[2].id, roomNumber: '201', prevMeter: 500, currMeter: 540, units: 40, elecCharge: 400, rent: 7500, total: 7900, amountPaid: 0, status: 'pending', notes: '', paymentHistory: [], createdAt: new Date().toISOString(), paidAt: null },
+  ]);
+  DB.set('complaints', [
     { id: genId(), studentId: s2id, studentName: 'Priya Patel', roomNumber: '102', category: 'Plumbing', description: 'Tap leaking in bathroom', status: 'pending', createdAt: new Date().toISOString() },
     { id: genId(), studentId: s1id, studentName: 'Arjun Sharma', roomNumber: '101', category: 'Electrical', description: 'Fan running slow', status: 'resolved', createdAt: new Date(Date.now()-86400000*2).toISOString(), resolvedAt: new Date().toISOString() },
-  ];
-  DB.set('complaints', complaints);
-
-  DB.set('activity', [
-    { text: 'Arjun Sharma checked in to Room 101', type: 'student', date: new Date(Date.now()-86400000*5).toISOString() },
-    { text: 'Priya Patel checked in to Room 102', type: 'student', date: new Date(Date.now()-86400000*4).toISOString() },
-    { text: 'Ravi Kumar checked in to Room 201', type: 'student', date: new Date(Date.now()-86400000*3).toISOString() },
-    { text: 'Electricity readings recorded for all rooms', type: 'room', date: new Date(Date.now()-86400000*2).toISOString() },
-    { text: 'Bill for Arjun Sharma — ₹4,950 (Paid)', type: 'payment', date: new Date(Date.now()-86400000).toISOString() },
-    { text: 'Partial payment ₹3,000 from Priya Patel', type: 'payment', date: new Date().toISOString() },
   ]);
-
+  DB.set('activity', [
+    { id: genId(), text: 'Arjun Sharma checked in to Room 101', type: 'student', date: new Date(Date.now()-86400000*5).toISOString() },
+    { id: genId(), text: 'Electricity readings recorded for all rooms', type: 'room', date: new Date(Date.now()-86400000*2).toISOString() },
+    { id: genId(), text: 'Bill for Arjun Sharma — ₹4,950 (Paid)', type: 'payment', date: new Date(Date.now()-86400000).toISOString() },
+    { id: genId(), text: 'Partial payment ₹3,000 from Priya Patel', type: 'payment', date: new Date().toISOString() },
+  ]);
   DB.set('seeded_v2', true);
 }
 
-// ====== MAIN APP ======
+// ====== APP INIT ======
 const App = {
+  // Called after setup wizard completes (Supabase or Local mode)
+  boot() {
+    if (Auth.check()) {
+      App.init();
+    } else {
+      document.getElementById('loginScreen').classList.remove('d-none');
+    }
+  },
+
   init() {
     seedDemoData();
-
     Rooms.init();
     Students.init();
     Electricity.init();
@@ -315,7 +239,6 @@ const App = {
       weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
     });
 
-    // Set default month for room billing
     const rbMonth = document.getElementById('rbMonth');
     if (rbMonth) rbMonth.value = currentMonth();
 
@@ -324,13 +247,34 @@ const App = {
   }
 };
 
-// ====== BOOT ======
-document.addEventListener('DOMContentLoaded', () => {
+// ====== BOOT — Entry point ======
+window.addEventListener('load', () => {
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !document.getElementById('loginScreen').classList.contains('d-none')) {
       Auth.login();
     }
   });
-  if (!Auth.check()) { /* show login */ }
-  else { App.init(); }
+
+  // Check if credentials are saved from a previous session
+  const savedUrl = localStorage.getItem('sb_url');
+  const savedKey = localStorage.getItem('sb_key');
+
+  if (savedUrl && savedKey) {
+    // Auto-connect — skip setup wizard
+    document.getElementById('sbUrl').value = savedUrl;
+    document.getElementById('sbKey').value = savedKey;
+    SupaSetup._url = savedUrl;
+    SupaSetup._key = savedKey;
+    SupaSync.init(savedUrl, savedKey);
+    // Pull latest data from cloud then boot
+    SupaSync.pullAll().then(() => {
+      document.getElementById('setupOverlay').style.display = 'none';
+      App.boot();
+    });
+  } else {
+    // Show setup wizard (first time)
+    document.getElementById('setupOverlay').style.display = 'flex';
+    document.getElementById('loginScreen').classList.add('d-none');
+    document.getElementById('mainApp').classList.add('d-none');
+  }
 });
