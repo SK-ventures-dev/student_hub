@@ -29,8 +29,8 @@
   --radius-sm: 8px;
   --shadow: 0 2px 12px rgba(0,0,0,0.07);
   --shadow-lg: 0 8px 30px rgba(0,0,0,0.10);
-  --font-head: 'Syne', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-head: 'Poppins', sans-serif;
+  --font-body: 'Poppins', sans-serif;
   --transition: all 0.2s ease;
 }
 
