@@ -374,7 +374,7 @@ body {
 /* ====== DASHBOARD STAT CARDS ====== */
 .stat-card {
   border-radius: var(--radius);
-  padding: 22px;
+  padding: 15px;
   display: flex;
   align-items: center;
   gap: 16px;
