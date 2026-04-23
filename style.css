@@ -374,10 +374,10 @@ body {
 /* ====== DASHBOARD STAT CARDS ====== */
 .stat-card {
   border-radius: var(--radius);
-  padding: 15px;
+  padding: 15px 9px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   transition: var(--transition);
@@ -399,8 +399,8 @@ body {
 .stat-info { flex: 1; }
 .stat-value {
   font-family: var(--font-head);
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   line-height: 1;
   color: var(--text);
 }
